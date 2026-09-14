@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CGMTRACK</title>
+<style>
+  body { margin:0; background:#EEF1F4; font-family:system-ui, -apple-system, "Segoe UI", sans-serif; color:#16222E }
+  .boite { max-width:640px; margin:60px auto; padding:28px; background:#fff;
+           border:1px solid #D9DFE4; border-radius:8px }
+  h2 { margin-top:0 }
+  code { background:#F3F5F6; padding:1px 5px; border-radius:3px; font-size:92% }
+  .bouton { display:inline-block; padding:9px 18px; background:#1F5FD0; color:#fff;
+            border:none; border-radius:5px; font-weight:600; cursor:pointer; font-size:14px }
+  .lien { display:inline-block; padding:8px 14px; background:#16222E; color:#fff;
+          text-decoration:none; border-radius:5px; font-weight:600 }
+  .erreur { color:#C43A3A; font-weight:600 }
+  .discret { font-size:12.5px; color:#5A6B7A }
+  input { width:100%; padding:9px; border:1px solid #D9DFE4; border-radius:5px; font-family:monospace }
+  ol { line-height:1.7 }
+</style>
+</head>
+<body>
+<div id="ecran" class="boite"><h2>CGMTRACK</h2><p class="discret">Ouverture…</p></div>
+
+<script>
+/* ============================================================================
+   CGMTRACK — LE LANCEUR.
+
+   Demande de Gilles, 14/09 : « donne moi un vrai lanceur, pas le code, un lien
+   html ». Le reproche est juste, et la cause tient en un mot : le dépôt est
+   PRIVÉ. Un lien vers cgmtrack-bureau.html sur GitHub rend le FICHIER SOURCE
+   (GitHub le sert en text/plain), donc du code à l'écran. Et aucune page web ne
+   peut afficher l'application : la publier sur le web exposerait data/ — les
+   consultations, les décisions, les contacts, les prix — à qui passe. Ce n'est
+   pas une limite technique qu'on contourne, c'est la confidentialité du dépôt,
+   et elle ne se négocie pas.
+
+   Ce fichier est la réponse : il se télécharge UNE FOIS, se pose sur le bureau,
+   et à chaque ouverture il va chercher la DERNIÈRE version de l'application
+   dans le dépôt, puis l'affiche. Plus jamais de fichier à retélécharger quand
+   l'application change — c'est le lanceur qui s'en charge.
+
+   Il n'invente rien et ne garde rien : il ne fait que rapporter et afficher.
+   Le jeton de lecture est le MÊME que celui de la copie de bureau (même clé de
+   stockage), donc rien à ressaisir si ce navigateur le connaît déjà.
+   ========================================================================= */
+(function () {
+  var DEPOT = "GANA26120/CGMTRACK", BRANCHE = "main", FICHIER = "cgmtrack-bureau.html";
+  var CLE = "cgmtrack_jeton";
+  /* Détourné par tests/test_lanceur.py vers un faux dépôt local : on teste le
+     mécanisme réel, sans jamais faire voyager un vrai jeton. */
+  var SOURCE = window.CGMTRACK_SOURCE ||
+      ("https://api.github.com/repos/" + DEPOT + "/contents/" + FICHIER + "?ref=" + BRANCHE);
+
+  var ecran = document.getElementById("ecran");
+
+  function afficher(html) { ecran.innerHTML = html; }
+
+  function jetonStocke() {
+    try { return localStorage.getItem(CLE); } catch (e) { return null; }
+  }
+
+  /* ---- L'écran du jeton : le même mode d'emploi que la copie de bureau ----- */
+  function demanderJeton(message) {
+    afficher(
+      "<h2>CGMTRACK</h2>" +
+      (message ? '<p class="erreur">' + message + "</p>" : "") +
+      "<p>Ce lanceur va chercher l'application dans le dépôt privé <b>" + DEPOT +
+      "</b>. Il lui faut, une seule fois, un jeton GitHub <b>à lecture seule</b> :</p>" +
+      "<ol>" +
+      '<li style="margin-bottom:10px">' +
+      '<a class="lien" href="https://github.com/settings/personal-access-tokens/new" ' +
+      'target="_blank" rel="noopener">Ouvrir la page GitHub de création du jeton</a>' +
+      '<div class="discret" style="margin-top:5px">Ce lien mène droit au formulaire. ' +
+      "Il faut être connecté au compte GANA26120.</div></li>" +
+      "<li><b>Token name</b> : un nom qui dit de QUEL POSTE il s'agit — " +
+      "<code>CGMTRACK PC pro</code>, <code>CGMTRACK PC perso</code>… GitHub refuse deux " +
+      "jetons du même nom, et un jeton par poste se révoque sans couper les autres.</li>" +
+      "<li><b>Repository access</b> : <b>Only select repositories</b>, puis <b>CGMTRACK</b>.</li>" +
+      "<li><b>Permissions</b> → <b>Repository permissions</b> → <b>Contents</b> → " +
+      "<b>Read-only</b>. Rien d'autre.</li>" +
+      "<li>Bouton vert <b>Generate token</b>, tout en bas.</li>" +
+      "<li>Le jeton n'est affiché <b>qu'une fois</b> — il commence par " +
+      "<code>github_pat_</code>. Le copier, le coller ci-dessous.</li>" +
+      "</ol>" +
+      '<input id="jeton" type="password" placeholder="github_pat_…">' +
+      '<p><button id="valider" class="bouton">Enregistrer sur ce poste et ouvrir</button></p>' +
+      '<p id="souci" class="erreur"></p>' +
+      '<p class="discret">Le jeton reste dans ce navigateur. Il ne part nulle part ' +
+      "ailleurs que vers l'API GitHub, et se révoque à tout moment.</p>");
+
+    document.getElementById("valider").onclick = function () {
+      var v = (document.getElementById("jeton").value || "").trim();
+      /* Un bouton sans objet ne fait rien de mieux qu'un message honnête. */
+      if (!v) {
+        document.getElementById("souci").textContent =
+          "la case est vide : collez le jeton avant d'enregistrer.";
+        return;
+      }
+      var garde = null;
+      try { localStorage.setItem(CLE, v); garde = localStorage.getItem(CLE); }
+      catch (e) { garde = null; }
+      if (garde !== v) {
+        document.getElementById("souci").textContent =
+          "Ce navigateur refuse d'enregistrer le jeton (stockage local bloqué). " +
+          "Ouvrez la page hors navigation privée, ou autorisez le stockage pour " +
+          "les fichiers locaux.";
+        return;
+      }
+      lancer();
+    };
+  }
+
+  /* ---- L'échec se DIT, avec ce qu'on a vraiment observé (règle n° 15) ------ */
+  function echec(titre, detail, proposerJeton) {
+    afficher("<h2>CGMTRACK — l'application n'a pas pu être chargée</h2>" +
+             '<p class="erreur">' + titre + "</p>" +
+             "<p>" + detail + "</p>" +
+             '<p><button id="reessayer" class="bouton">Réessayer</button>' +
+             (proposerJeton
+               ? ' <button id="rejeton" class="bouton" style="background:#5A6B7A">' +
+                 "Saisir un autre jeton</button>"
+               : "") + "</p>" +
+             '<p class="discret">Le lanceur ne montre jamais de données inventées : ' +
+             "s'il ne peut pas lire le dépôt, il le dit et s'arrête là.</p>");
+    document.getElementById("reessayer").onclick = lancer;
+    var r = document.getElementById("rejeton");
+    if (r) r.onclick = function () {
+      try { localStorage.removeItem(CLE); } catch (e) {}
+      demanderJeton(null);
+    };
+  }
+
+  /* ---- Aller chercher la dernière version, puis l'afficher ---------------- */
+  function lancer() {
+    var jeton = jetonStocke();
+    if (!jeton) { demanderJeton(null); return; }
+
+    afficher('<h2>CGMTRACK</h2><p class="discret">Récupération de la dernière ' +
+             "version de l'application…</p>");
+
+    /* « Accept: …raw » rend le fichier TEL QUEL : pas de base64 à décoder, et
+       pas de plafond à 1 Mo comme sur la réponse JSON. */
+    fetch(SOURCE, {
+      cache: "no-store",
+      headers: { Authorization: "Bearer " + jeton,
+                 Accept: "application/vnd.github.raw" }
+    }).then(function (r) {
+      if (r.status === 401) {
+        echec("GitHub refuse ce jeton (401).",
+              "Il est expiré, révoqué, ou incomplet à la copie. Il faut en créer un autre.",
+              true);
+        return null;
+      }
+      if (r.status === 403 || r.status === 404) {
+        echec("Ce jeton ne donne pas accès au dépôt (" + r.status + ").",
+              "Sur GitHub, sa ligne <b>Contents</b> doit être sur <b>Read-only</b> au " +
+              "minimum, et <b>CGMTRACK</b> doit figurer dans <b>Only select " +
+              "repositories</b>. GitHub répond « introuvable » plutôt que « interdit » : " +
+              "il ne révèle pas ce qu'il protège.", true);
+        return null;
+      }
+      if (!r.ok) {
+        echec("GitHub a répondu " + r.status + ".",
+              "Ce n'est ni le jeton ni les droits : réessayez dans un instant.", false);
+        return null;
+      }
+      return r.text();
+    }).then(function (html) {
+      if (html === null || html === undefined) return;
+      if (html.indexOf("<!DOCTYPE html") === -1) {
+        /* On n'affiche pas n'importe quoi sous le nom de l'application. */
+        echec("Le dépôt n'a pas rendu une page d'application.",
+              "Ce qui est revenu ne ressemble pas à " + FICHIER + ". Rien n'a été " +
+              "affiché — mieux vaut un écran honnête qu'une page qui fait semblant.",
+              false);
+        return;
+      }
+      /* document.open() repart d'un document vierge dans la MÊME page : même
+         origine, donc le jeton reste lisible par l'application, et son propre
+         démarrage (React puis Babel) se déroule normalement — document.close()
+         relance un cycle de chargement complet. */
+      document.open();
+      document.write(html);
+      document.close();
+    }).catch(function (e) {
+      echec("Le navigateur n'a pas pu joindre GitHub.",
+            "Message reçu : <code>" + String(e && e.message ? e.message : e) + "</code>. " +
+            "Le plus souvent : pas de réseau, ou <code>api.github.com</code> bloqué par " +
+            "le réseau de l'entreprise.", false);
+    });
+  }
+
+  lancer();
+})();
+</script>
+</body>
+</html>
