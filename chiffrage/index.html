@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Chiffrage Gaines HVAC</title>
+<meta name="theme-color" content="#2478c8">
+<style>
+  body { margin:0; min-height:100vh; background:#eef3fa; background-image:linear-gradient(160deg,#e6effb 0%,#f2f5fa 45%,#fbf4ef 100%); background-attachment:fixed;
+         font-family:system-ui, -apple-system, "Segoe UI", sans-serif; color:#172b45 }
+  .boite { max-width:640px; margin:48px auto; padding:26px 28px 28px; background:#fff;
+           border:1px solid #e8eef5; border-radius:14px; box-shadow:0 1px 2px rgba(23,43,69,.05), 0 8px 24px rgba(23,43,69,.08);
+           border-top:4px solid; border-image:linear-gradient(90deg,#2478c8,#1b63b4 55%,#e5353d) 1 }
+  .entete { display:flex; align-items:center; gap:14px; margin-bottom:14px }
+  .logo { width:56px; height:56px; flex:none }
+  .titre { padding-left:14px; border-left:1px solid #d8e1ec; font-weight:700; font-size:20px; line-height:1.15; color:#172b45 }
+  .titre small { display:block; font-weight:400; font-size:12px; color:#55677f; margin-top:2px }
+  h2 { margin:14px 0 8px; font-size:17px; color:#17335f }
+  code { background:#e0eefb; color:#17335f; padding:1px 6px; border-radius:6px; font-size:92% }
+  .bouton { display:inline-block; padding:10px 18px; background:linear-gradient(135deg,#2478c8,#1b63b4); color:#fff;
+            border:none; border-radius:9px; font-weight:600; cursor:pointer; font-size:14px; box-shadow:0 4px 12px rgba(36,120,200,.28) }
+  .lien { display:inline-block; padding:8px 14px; background:#17335f; color:#fff;
+          text-decoration:none; border-radius:9px; font-weight:600 }
+  .erreur { color:#cc2f36; font-weight:600 }
+  .discret { font-size:12.5px; color:#55677f }
+  input { width:100%; padding:10px; border:1px solid #ecdc93; background:#fffbe6; border-radius:9px; font-family:monospace; box-sizing:border-box }
+  ol { line-height:1.7 }
+  @media (max-width:700px) { .boite { margin:14px; padding:18px } .logo { width:44px; height:44px } .titre { font-size:17px } }
+</style>
+</head>
+<body>
+<div class="boite"><div class="entete"><svg class="logo" viewBox="0 0 104 104" role="img" aria-label="CGM Process"><defs><linearGradient id="hg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4a9de6"/><stop offset="1" stop-color="#1b63b4"/></linearGradient></defs><polygon points="52,3 95,27.5 95,76.5 52,101 9,76.5 9,27.5" fill="url(#hg)"/><path d="M69.5 34.5 A25 25 0 1 0 69.5 69.5" fill="none" stroke="#fff" stroke-width="13.5" stroke-linecap="round" opacity=".9"/><path d="M69.5 34.5 A25 25 0 1 0 69.5 69.5" fill="none" stroke="#e5353d" stroke-width="11" stroke-linecap="round"/></svg><div class="titre">CGM Process<small>Chiffrage Gaines HVAC · outil interne</small></div></div><div id="ecran"><p class="discret">Ouverture…</p></div></div>
+
+<script>
+/* ============================================================================
+   CHIFFRAGE GAINES HVAC — LE LANCEUR iPad / iPhone (même mécanique que CGMTRACK).
+
+   Le dépôt de l'application est PRIVÉ : il contient les prix d'achat, les
+   marges et le barème de pose. Cette page publique ne contient rien de tout
+   cela. Elle demande une seule fois un jeton GitHub à lecture seule, puis va
+   chercher la DERNIÈRE version de l'application dans le dépôt privé et
+   l'affiche. Le jeton reste dans ce navigateur et n'est envoyé qu'à
+   api.github.com.
+   ========================================================================= */
+(function () {
+  var DEPOT = "GANA26120/CGM-CHIFFRAGE-HVAC-", BRANCHE = "main",
+      FICHIER = "dist/CGM-Chiffrage-Gaines-HVAC.html";
+  var CLE = "cgm_chiffrage_jeton";
+  var SOURCE = window.CGM_SOURCE ||
+      ("https://api.github.com/repos/" + DEPOT + "/contents/" + FICHIER + "?ref=" + BRANCHE);
+
+  var ecran = document.getElementById("ecran");
+  function afficher(html) { ecran.innerHTML = html; }
+  function jetonStocke() { try { return localStorage.getItem(CLE); } catch (e) { return null; } }
+
+  /* ---- L'écran du jeton ---------------------------------------------------- */
+  function demanderJeton(message) {
+    afficher(
+      "<h2>Jeton d'accès</h2>" +
+      (message ? '<p class="erreur">' + message + "</p>" : "") +
+      "<p>Ce lanceur va chercher l'application dans le dépôt privé <b>" + DEPOT +
+      "</b>. Il lui faut, une seule fois sur cet appareil, un jeton GitHub <b>à lecture seule</b> :</p>" +
+      "<ol>" +
+      '<li style="margin-bottom:10px">' +
+      '<a class="lien" href="https://github.com/settings/personal-access-tokens/new" ' +
+      'target="_blank" rel="noopener">Ouvrir la page GitHub de création du jeton</a>' +
+      '<div class="discret" style="margin-top:5px">Il faut être connecté au compte GANA26120.</div></li>' +
+      "<li><b>Token name</b> : un nom qui dit de QUEL APPAREIL il s'agit : " +
+      "<code>CHIFFRAGE iPad</code>, <code>CHIFFRAGE iPhone</code>… Un jeton par appareil " +
+      "se révoque sans couper les autres.</li>" +
+      "<li><b>Expiration</b> : choisir la durée la plus longue proposée (ou « No expiration » si disponible).</li>" +
+      "<li><b>Repository access</b> : <b>Only select repositories</b>, puis <b>CGM-CHIFFRAGE-HVAC-</b>" +
+      " (vous pouvez aussi cocher CGMTRACK pour n'avoir qu'un seul jeton).</li>" +
+      "<li><b>Permissions</b> → <b>Repository permissions</b> → <b>Contents</b> → " +
+      "<b>Read-only</b>. Rien d'autre.</li>" +
+      "<li>Bouton vert <b>Generate token</b>, tout en bas.</li>" +
+      "<li>Le jeton n'est affiché <b>qu'une fois</b> : il commence par " +
+      "<code>github_pat_</code>. Le copier, le coller ci-dessous.</li>" +
+      "</ol>" +
+      '<input id="jeton" type="password" placeholder="github_pat_…" autocomplete="off">' +
+      '<p><button id="valider" class="bouton">Enregistrer sur cet appareil et ouvrir</button></p>' +
+      '<p id="souci" class="erreur"></p>' +
+      '<p class="discret">Le jeton reste dans ce navigateur. Il ne part nulle part ' +
+      "ailleurs que vers l'API GitHub, et se révoque à tout moment depuis GitHub.</p>");
+
+    document.getElementById("valider").onclick = function () {
+      var v = (document.getElementById("jeton").value || "").trim();
+      if (!v) {
+        document.getElementById("souci").textContent = "La case est vide : collez le jeton avant d'enregistrer.";
+        return;
+      }
+      var garde = null;
+      try { localStorage.setItem(CLE, v); garde = localStorage.getItem(CLE); } catch (e) { garde = null; }
+      if (garde !== v) {
+        document.getElementById("souci").textContent =
+          "Ce navigateur refuse d'enregistrer le jeton (stockage local bloqué). " +
+          "Ouvrez la page hors navigation privée.";
+        return;
+      }
+      lancer();
+    };
+  }
+
+  /* ---- L'échec se dit, avec ce qui a vraiment été observé ------------------ */
+  function echec(titre, detail, proposerJeton) {
+    afficher("<h2>L'application n'a pas pu être chargée</h2>" +
+             '<p class="erreur">' + titre + "</p><p>" + detail + "</p>" +
+             '<p><button id="reessayer" class="bouton">Réessayer</button>' +
+             (proposerJeton ? ' <button id="rejeton" class="bouton" style="background:#55677f;box-shadow:none">Saisir un autre jeton</button>' : "") + "</p>" +
+             '<p class="discret">Le lanceur ne montre jamais de données inventées : ' +
+             "s'il ne peut pas lire le dépôt, il le dit et s'arrête là.</p>");
+    document.getElementById("reessayer").onclick = lancer;
+    var r = document.getElementById("rejeton");
+    if (r) r.onclick = function () { try { localStorage.removeItem(CLE); } catch (e) {} demanderJeton(null); };
+  }
+
+  /* ---- Aller chercher la dernière version, puis l'afficher ---------------- */
+  function lancer() {
+    var jeton = jetonStocke();
+    if (!jeton) { demanderJeton(null); return; }
+    afficher('<p class="discret">Récupération de la dernière version de l\'application…</p>');
+
+    /* « Accept: …raw » rend le fichier tel quel : pas de base64, pas de plafond à 1 Mo. */
+    fetch(SOURCE, {
+      cache: "no-store",
+      headers: { Authorization: "Bearer " + jeton, Accept: "application/vnd.github.raw" }
+    }).then(function (r) {
+      if (r.status === 401) {
+        echec("GitHub refuse ce jeton (401).", "Il est expiré, révoqué, ou incomplet à la copie. Il faut en créer un autre.", true);
+        return null;
+      }
+      if (r.status === 403 || r.status === 404) {
+        echec("Ce jeton ne donne pas accès au dépôt (" + r.status + ").",
+              "Sur GitHub, sa ligne <b>Contents</b> doit être sur <b>Read-only</b> au minimum, et " +
+              "<b>CGM-CHIFFRAGE-HVAC-</b> doit figurer dans <b>Only select repositories</b>. " +
+              "GitHub répond « introuvable » plutôt que « interdit » : il ne révèle pas ce qu'il protège.", true);
+        return null;
+      }
+      if (!r.ok) {
+        echec("GitHub a répondu " + r.status + ".", "Ce n'est ni le jeton ni les droits : réessayez dans un instant.", false);
+        return null;
+      }
+      return r.text();
+    }).then(function (html) {
+      if (html === null || html === undefined) return;
+      if (!/^\s*<!doctype html/i.test(html)) {
+        echec("Le dépôt n'a pas rendu une page d'application.",
+              "Ce qui est revenu ne ressemble pas à " + FICHIER + ". Rien n'a été affiché.", false);
+        return;
+      }
+      /* document.open() repart d'un document vierge dans la MÊME page : même origine,
+         donc les devis enregistrés localement par l'application restent à leur place. */
+      document.open();
+      document.write(html);
+      document.close();
+    }).catch(function (e) {
+      echec("Le navigateur n'a pas pu joindre GitHub.",
+            "Message reçu : <code>" + String(e && e.message ? e.message : e) + "</code>. " +
+            "Le plus souvent : pas de réseau, ou <code>api.github.com</code> bloqué par le réseau.", false);
+    });
+  }
+
+  lancer();
+})();
+</script>
+</body>
+</html>
