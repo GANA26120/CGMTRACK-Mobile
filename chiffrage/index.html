@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Chiffrage Gaines HVAC</title>
+<meta name="apple-mobile-web-app-title" content="Chiffrage HVAC">
 <meta name="theme-color" content="#2478c8">
 <style>
   body { margin:0; min-height:100vh; background:#eef3fa; background-image:linear-gradient(160deg,#e6effb 0%,#f2f5fa 45%,#fbf4ef 100%); background-attachment:fixed;
@@ -23,7 +24,7 @@
           text-decoration:none; border-radius:9px; font-weight:600 }
   .erreur { color:#cc2f36; font-weight:600 }
   .discret { font-size:12.5px; color:#55677f }
-  input { width:100%; padding:10px; border:1px solid #ecdc93; background:#fffbe6; border-radius:9px; font-family:monospace; box-sizing:border-box }
+  input { width:100%; padding:10px; border:1px solid #ecdc93; background:#fffbe6; border-radius:9px; font-family:monospace; box-sizing:border-box; font-size:16px }
   ol { line-height:1.7 }
   @media (max-width:700px) { .boite { margin:14px; padding:18px } .logo { width:44px; height:44px } .titre { font-size:17px } }
 </style>
@@ -45,13 +46,26 @@
 (function () {
   var DEPOT = "GANA26120/CGM-CHIFFRAGE-HVAC-", BRANCHE = "main",
       FICHIER = "dist/CGM-Chiffrage-Gaines-HVAC.html";
-  var CLE = "cgm_chiffrage_jeton";
+  var CLE = "cgm_chiffrage_jeton", CLE_CGMTRACK = "cgmtrack_jeton";
+  /* Si ce navigateur connaît déjà le jeton CGMTRACK (même site), on l'essaie d'abord :
+     rien à ressaisir quand il couvre aussi ce dépôt. Sinon, le formulaire s'affiche. */
+  var jetonEmprunte = false;
   var SOURCE = window.CGM_SOURCE ||
       ("https://api.github.com/repos/" + DEPOT + "/contents/" + FICHIER + "?ref=" + BRANCHE);
 
   var ecran = document.getElementById("ecran");
   function afficher(html) { ecran.innerHTML = html; }
-  function jetonStocke() { try { return localStorage.getItem(CLE); } catch (e) { return null; } }
+  function jetonStocke() {
+    try {
+      var v = localStorage.getItem(CLE);
+      if (v) { jetonEmprunte = false; return v; }
+      v = localStorage.getItem(CLE_CGMTRACK);
+      jetonEmprunte = !!v;
+      return v;
+    } catch (e) { return null; }
+  }
+  var MSG_EMPRUNT = "Le jeton CGMTRACK déjà enregistré sur cet appareil a été essayé, mais il ne couvre pas le dépôt " +
+      "<b>CGM-CHIFFRAGE-HVAC-</b>. Collez un jeton qui coche ce dépôt (il peut aussi cocher CGMTRACK) : il sera mémorisé ici.";
 
   /* ---- L'écran du jeton ---------------------------------------------------- */
   function demanderJeton(message) {
@@ -70,7 +84,7 @@
       "se révoque sans couper les autres.</li>" +
       "<li><b>Expiration</b> : choisir la durée la plus longue proposée (ou « No expiration » si disponible).</li>" +
       "<li><b>Repository access</b> : <b>Only select repositories</b>, puis <b>CGM-CHIFFRAGE-HVAC-</b>" +
-      " (vous pouvez aussi cocher CGMTRACK pour n'avoir qu'un seul jeton).</li>" +
+      " (cochez aussi CGMTRACK pour n'avoir qu'un seul jeton pour les deux applications).</li>" +
       "<li><b>Permissions</b> → <b>Repository permissions</b> → <b>Contents</b> → " +
       "<b>Read-only</b>. Rien d'autre.</li>" +
       "<li>Bouton vert <b>Generate token</b>, tout en bas.</li>" +
@@ -125,6 +139,10 @@
       cache: "no-store",
       headers: { Authorization: "Bearer " + jeton, Accept: "application/vnd.github.raw" }
     }).then(function (r) {
+      if (jetonEmprunte && (r.status === 401 || r.status === 403 || r.status === 404)) {
+        demanderJeton(MSG_EMPRUNT);
+        return null;
+      }
       if (r.status === 401) {
         echec("GitHub refuse ce jeton (401).", "Il est expiré, révoqué, ou incomplet à la copie. Il faut en créer un autre.", true);
         return null;
