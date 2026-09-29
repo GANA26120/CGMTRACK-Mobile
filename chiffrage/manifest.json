@@ -1,0 +1,14 @@
+{
+  "name": "Chiffrage Gaines HVAC",
+  "short_name": "Chiffrage HVAC",
+  "description": "Chiffrage fourniture + pose de gaines de ventilation (CGM, outil interne)",
+  "start_url": "./index.html",
+  "display": "browser",
+  "background_color": "#eef3fa",
+  "theme_color": "#2478c8",
+  "lang": "fr",
+  "icons": [
+    { "src": "icone-180.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "icone-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
